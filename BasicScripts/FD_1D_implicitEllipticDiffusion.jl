@@ -9,7 +9,9 @@ GLMakie.activate!()
     ρ       = (lx/(dc*2π))^2        # Numerical density
     # Numerics
     ncx     = 200                   # Number of cells in x
-    nVis    = 50                     # Visualise every XXX
+    ϵtol    = 1e-8                  # Residual tolerance
+    maxiter = 20ncx                  # Maximum no. iterations
+    ncheck  = ceil(Int,0.25ncx)      # Convergence check frequency
     # Derived Numerics
     dx      = lx/ncx                # Spatial step size
     dt      = dx/sqrt(1/ρ) #dx^2/dc/2.1           # Time step size
@@ -18,25 +20,33 @@ GLMakie.activate!()
     # Initialisation
     C       = @. 1.0+exp(-(xc-lx/4)^2) - xc/lx; C_ini = copy(C)
     qx      = zeros(Float64, ncx-1)
+    iter = 1; err = 2ϵtol; iter_evo = Float64[]; err_evo = Float64[]
     fig1    = Figure()                 # Plotting
-    ax      = Axis(fig1[1, 1], title = "Damped wave 1D", ylabel = "C", xlabel = "x")
-    lines!(ax, xc, C)
-    lines!(ax, xc, C_ini)
+    ax1     = Axis(fig1[1, 1])
+    ax2     = Axis(fig1[2, 1], yscale = log10)
+    lines!(ax1, xc, C, color = :blue)
+    lines!(ax1, xc, C_ini, color = :orange)
+    lines!(ax2, iter_evo, err_evo, color = :blue)
     display(fig1) 
-    # Time loop
-    for it = 1:nt
+    # Iteration loop
+    while err >= ϵtol && iter <= maxiter
         # Computation
         #qx         .-=   dt./(ρ.*dc + dt).*(qx + dc.*diff(C)./dx)                  # Ludo's formulation
         qx          .=   1.0./(dt + ρ.*dc) .* (ρ.*dc.*qx - dc.*dt.*diff(C)./dx) # My formulation 
         C[2:end-1] .-=   dt.* diff(qx)./dx
         # Visualisation
-        if it%nVis == 0
+        if iter % ncheck == 0
+            err = maximum(abs.(diff(dc.*diff(C)./dx)./dx))
+            push!(iter_evo, iter/ncx); push!(err_evo, err)
             sleep(0.1)
-            empty!(ax)
-            lines!(ax, xc, C, color = :blue)
-            lines!(ax, xc, C_ini, color = :orange)
+            empty!(ax1)
+            empty!(ax2)
+            lines!(ax1, xc, C, color = :blue)
+            lines!(ax1, xc, C_ini, color = :orange)
+            lines!(ax2, iter_evo, err_evo, color = :blue)
             display(fig1)
         end
+        iter += 1
     end        
 end
 
