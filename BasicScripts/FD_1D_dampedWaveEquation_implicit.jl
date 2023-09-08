@@ -26,7 +26,8 @@ GLMakie.activate!()
     # Time loop
     for it = 1:nt
         # Computation
-        qx         .-=   dt./(ρ.*dc + dt).*(qx + dc.*diff(C)./dx)
+        #qx         .-=   dt./(ρ.*dc + dt).*(qx + dc.*diff(C)./dx)
+        qx          .=   1.0./(dt + ρ.*dc) .* (ρ.*dc.*qx - dc.*dt.*diff(C)./dx)
         C[2:end-1] .-=   dt.* diff(qx)./dx
         # Visualisation
         if it%nVis == 0
