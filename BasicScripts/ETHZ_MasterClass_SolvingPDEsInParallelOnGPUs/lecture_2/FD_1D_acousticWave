@@ -1,0 +1,43 @@
+using GLMakie
+
+@views function acousticWave1D()
+    # Physics
+    lx      = 20.0
+    ρ, β    = 1.0, 1.0
+
+    # Numerics
+    ncx     = 200                   # Number of cells in x
+    nVis    = 2                     # Visualise every XXX
+    
+    # Derived Numerics
+    dx      = lx/ncx                # Spatial step size
+    dt      = dx/sqrt(1/β/ρ)        # Time step size
+    nt      = ncx^2/100             # No. of time steps to compute
+    xc      = LinRange(dx/2, lx-dx/2, ncx) # Coordinate array
+    Pa      = @. exp(-(xc-lx/4)^2); Pa_ini = copy(Pa) # Acoustic pressure
+    vx      = zeros(Float64, ncx-1)
+    fig1    = Figure()                 # Plotting
+    ax      = Axis(fig1[1, 1])
+    lines!(ax, xc, Pa)
+    lines!(ax, xc, Pa_ini)
+    display(fig1) 
+    # Time loop
+    for it = 1:nt
+        # Computation
+        vx          .-= dt./ρ.*diff(Pa)./dx
+        Pa[2:end-1] .-= dt./β.*diff(vx)./dx
+        # Visualisation
+        if it%nVis == 0
+            sleep(0.1)
+            fig1    = Figure()                 # Plotting
+            ax      = Axis(fig1[1, 1])
+            lines!(ax, xc, Pa)
+            lines!(ax, xc, Pa_ini)
+            display(fig1)
+            DataInspector(fig1)
+        end
+    end 
+end
+
+# Call function
+acousticWave1D()
