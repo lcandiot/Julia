@@ -1,4 +1,4 @@
-# Solving 1D damped wave equation with central finite differences
+# Solving 1D diffusion reaction equation to steady state with central finite differences
 using GLMakie
 GLMakie.activate!()
 # Define Function

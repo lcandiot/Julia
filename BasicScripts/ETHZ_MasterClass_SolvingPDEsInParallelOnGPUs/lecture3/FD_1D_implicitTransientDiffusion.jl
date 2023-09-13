@@ -1,4 +1,4 @@
-# Solving 1D damped wave equation with central finite differences
+# Solving 1D diffusion equation with central finite differences
 using GLMakie
 GLMakie.activate!()
 # Define Function
@@ -6,7 +6,7 @@ GLMakie.activate!()
     # Physics
     lx      = 20.0                  # Length in x
     dc      = 1.0                   # Diffusion coefficient
-    time    = 0                     # Time
+    time    = 0.0                   # Time
     # Numerics
     ncx     = 200                   # Number of cells in x
     ϵtol    = 1e-8                  # Residual tolerance
@@ -61,7 +61,7 @@ GLMakie.activate!()
         end
         # Update physics
         C_old .= C
-        time += dt
+        time  += dt
     end        
 end
 
