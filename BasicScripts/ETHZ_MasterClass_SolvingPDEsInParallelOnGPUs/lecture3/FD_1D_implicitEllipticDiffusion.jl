@@ -2,7 +2,7 @@
 using GLMakie
 GLMakie.activate!()
 # Define Function
-@views function dampedWaveEquation_implicit_1D()
+@views function steadyDiffusion_implicit_1D()
     # Physics
     lx      = 20.0                  # Length in x
     dc      = 1.0                   # Diffusion coefficient
@@ -51,4 +51,4 @@ GLMakie.activate!()
 end
 
 # Call function
-dampedWaveEquation_implicit_1D()
+steadyDiffusion_implicit_1D()
