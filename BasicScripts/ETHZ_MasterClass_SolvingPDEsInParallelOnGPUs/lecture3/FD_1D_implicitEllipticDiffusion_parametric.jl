@@ -58,7 +58,7 @@ set_theme!(fontsize_theme)
         conv[ifact] = iter/ncx
         # Save figure
         if ifact == length(fact)
-            save("./png/steadyStateDiffusion_implicit_1D.png", fig1)
+            save("./ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture3/png/steadyStateDiffusion_implicit_1D.png", fig1)
         end
     end
     # Visualise result of parametric study
@@ -66,7 +66,7 @@ set_theme!(fontsize_theme)
     ax3  = Axis(fig2[1,1], xlabel="factor", ylabel="iter/ncx")
     lines!(ax3, fact, conv)  
     display(GLMakie.Screen(), fig2)
-    save("./png/parametricStudy.png", fig2)    
+    save("./ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture3/png/parametricStudy.png", fig2)    
 end
 
 # Call function
