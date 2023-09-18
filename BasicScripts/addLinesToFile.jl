@@ -21,7 +21,7 @@ function cleanTxtFiles()
             println(file, line)
         end
         close(file)
-        # Remove old and rename new files
+        # Remove old and update file names
         run(`rm -r $(targetDir)$(f)`)
         run(`mv $(targetDir)$(f)_copy $(targetDir)$(f)`)
     end
