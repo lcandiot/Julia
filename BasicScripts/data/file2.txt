@@ -1,0 +1,9 @@
+Another 
+text 
+file 
+with an 
+additional 
+empty last lines
+
+
+/********** END OF FILE **********/

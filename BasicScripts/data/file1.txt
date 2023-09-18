@@ -1,0 +1,5 @@
+Some
+new 
+text 
+file
+/********** END OF FILE **********/

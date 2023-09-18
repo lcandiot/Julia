@@ -1,0 +1,9 @@
+And a file
+where
+the EOF
+string is 
+present
+
+
+
+/********** END OF FILE **********/
