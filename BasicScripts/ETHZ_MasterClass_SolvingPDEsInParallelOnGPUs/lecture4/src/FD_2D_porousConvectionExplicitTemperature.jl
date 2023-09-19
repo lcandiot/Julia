@@ -11,15 +11,16 @@ set_theme!(fontsize_theme)
     αρg       = sqrt(αρgx^2+αρgy^2)
     ΔT        = 200.0
     ϕ         = 0.1
-    Ra        = 100
+    Ra        = 1000
     λ_ρCp     = 1/Ra*(αρg*k_ηf*ΔT*ly/ϕ) # Ra = αρg*k_ηf*ΔT*ly/λ_ρCp/ϕ
     # Numerics
     re        = 2π
     CFL       = 1.0/sqrt(2.1)
-    ncx, ncy  = 400,200               # Number of cells in x and y
+    ncx, ncy  = 127,63               # Number of cells in x and y
     ϵtol      = 1e-8                  # Residual tolerance
     maxiter   = 20*max(ncx,ncy)       # Maximum no. iterations
     ncheck    = ceil(Int,0.25ncx)     # Convergence check frequency
+    nvis      = 5                     # Visualisation frequency
     aspRat    = lx/ly                 # Model aspect ratio
     # Derived Numerics
     dx        = lx/ncx                # Spatial step size in x
@@ -27,12 +28,14 @@ set_theme!(fontsize_theme)
     dt_diff   = min(dx,dy)^2/λ_ρCp/4.1 # Thermal diffusion time step
     θ_dτ      = max(lx,ly)/re/CFL/min(dx,dy)
     β_dτ      = (re*k_ηf)/(CFL*min(dx,dy)*max(lx,ly))
-    nt        = 10 #ncx^2/5              # No. of time steps to compute
+    nt        = 500 #ncx^2/5              # No. of time steps to compute
     xc        = LinRange(-lx/2.0+dx/2, lx/2.0-dx/2, ncx) # Coordinate array
     yc        = LinRange(-ly/2.0+dy/2, ly/2.0-dy/2, ncy) # Coordinate array
     # Initialisation
     T         = @. ΔT*exp(-xc^2 - (yc')^2); T_ini = copy(T);
-    Pf        = zeros(Float64, ncx  , ncy)
+    Tx_avg    = zeros(Float64, ncx-1, ncy  )
+    Ty_avg    = zeros(Float64, ncx  , ncy-1)
+    Pf        = zeros(Float64, ncx  , ncy  )
     qDx       = zeros(Float64, ncx+1, ncy  )
     qDy       = zeros(Float64, ncx  , ncy+1)
     qTx       = zeros(Float64, ncx-1, ncy  )
@@ -50,8 +53,10 @@ set_theme!(fontsize_theme)
         iter = 1; err_Pf = 2ϵtol;
         while err_Pf >= ϵtol && iter <= maxiter
             # Computation of fluid pressure flux
-            qDx[2:end-1,:].-=   1.0./(1.0 + θ_dτ).*(qDx[2:end-1,:] + k_ηf.*diff(Pf, dims=1)./dx)                  # Ludo's formulation 
-            qDy[:,2:end-1].-=   1.0./(1.0 + θ_dτ).*(qDy[:,2:end-1] + k_ηf.*diff(Pf, dims=2)./dy)                  # Ludo's formulation
+            Tx_avg .= (T[2:end,:] .+ T[1:end-1,:])./2.0 
+            Ty_avg .= (T[:,2:end] .+ T[:,1:end-1])./2.0
+            qDx[2:end-1,:].-=   1.0./(1.0 + θ_dτ).*(qDx[2:end-1,:] + k_ηf.*diff(Pf, dims=1)./dx .- αρgx.*Tx_avg)                  # Ludo's formulation 
+            qDy[:,2:end-1].-=   1.0./(1.0 + θ_dτ).*(qDy[:,2:end-1] + k_ηf.*diff(Pf, dims=2)./dy .- αρgy.*Ty_avg)                  # Ludo's formulation
             # Fluid pressure update
             Pf          .-=   (diff(qDx, dims=1)./dx + diff(qDy, dims=2)./dy)./β_dτ
             # Convergence check
@@ -82,11 +87,13 @@ set_theme!(fontsize_theme)
         T[:,1] .= ΔT/2; T[:,end] .= -ΔT/2   # Top and bottom
         T[[1,end],:] .= T[[2,end-1],:]      # Left and right
         # Visualisation
-        sleep(1.0)
-        empty!(ax1)
-        heatmap!(ax1, xc, yc, T, colormap=:heat)
-        Colorbar(fig1[2,1], vertical=false, colormap=:heat, label=L"\textit{T}", limits=(-ΔT/2, ΔT/2))
-        display(fig1)
+        if it % nvis == 0
+            sleep(1.0)
+            empty!(ax1)
+            heatmap!(ax1, xc, yc, T, colormap=:heat)
+            Colorbar(fig1[2,1], vertical=false, colormap=:heat, label=L"\textit{T}", limits=(-ΔT/2, ΔT/2))
+            display(fig1)
+        end
     end
 end
 
