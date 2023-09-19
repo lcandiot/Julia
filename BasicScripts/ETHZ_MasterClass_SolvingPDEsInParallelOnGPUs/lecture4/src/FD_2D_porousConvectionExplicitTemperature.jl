@@ -1,6 +1,6 @@
 # Solving 2D porous convection equation with central finite differences
 using CairoMakie, Printf
-fontsize_theme = Theme(fontsize = 20)
+fontsize_theme = Theme(fontsize = 25)
 set_theme!(fontsize_theme)
 # Define Function
 @views function porousConvection_2D()
@@ -21,31 +21,35 @@ set_theme!(fontsize_theme)
     maxiter   = 20*max(ncx,ncy)       # Maximum no. iterations
     ncheck    = ceil(Int,0.25ncx)     # Convergence check frequency
     nvis      = 5                     # Visualisation frequency
+    qstp      = 4                     # Quiver density: higher values = less dense
     aspRat    = lx/ly                 # Model aspect ratio
+    printFig  = true                 # Printing switch
     # Derived Numerics
     dx        = lx/ncx                # Spatial step size in x
     dy        = ly/ncy                # Spatial step size in y
     dt_diff   = min(dx,dy)^2/λ_ρCp/4.1 # Thermal diffusion time step
     θ_dτ      = max(lx,ly)/re/CFL/min(dx,dy)
     β_dτ      = (re*k_ηf)/(CFL*min(dx,dy)*max(lx,ly))
-    nt        = 500 #ncx^2/5              # No. of time steps to compute
+    nt        = 1000 #ncx^2/5              # No. of time steps to compute
     xc        = LinRange(-lx/2.0+dx/2, lx/2.0-dx/2, ncx) # Coordinate array
-    yc        = LinRange(-ly/2.0+dy/2, ly/2.0-dy/2, ncy) # Coordinate array
+    yc        = LinRange(-ly+dy/2,         0.0, ncy) # Coordinate array
     # Initialisation
-    T         = @. ΔT*exp(-xc^2 - (yc')^2); T_ini = copy(T);
+    T         = @. ΔT*exp(-xc^2 - (yc'+ly/2.0)^2); T_ini = copy(T);
     Tx_avg    = zeros(Float64, ncx-1, ncy  )
     Ty_avg    = zeros(Float64, ncx  , ncy-1)
     Pf        = zeros(Float64, ncx  , ncy  )
     qDx       = zeros(Float64, ncx+1, ncy  )
     qDy       = zeros(Float64, ncx  , ncy+1)
+    qDx_avg   = zeros(Float64, ncx  , ncy  )
+    qDy_avg   = zeros(Float64, ncx  , ncy  )
     qTx       = zeros(Float64, ncx-1, ncy  )
     qTy       = zeros(Float64, ncx  , ncy-1)
     r_Pf      = zeros(Float64, ncx  , ncy  )
-    fig1      = Figure()                 # Plotting
-    ax1       = Axis(fig1[1, 1], aspect=aspRat, xlabel=L"\textit{xc}", ylabel=L"\textit{yc}")
-    ax2       = Axis(fig1[2,1])
-    heatmap!(ax1, xc, yc, T_ini, colormap=:heat)
-    #Colorbar(fig, vertical=false, colormap=:heat, label=L"\textit{T}")
+    # Plot initial configuration
+    fig1      = Figure(figure_padding=30)                 # Plotting
+    ax1       = Axis(fig1[1, 1], title="Porous convection 2D", aspect=aspRat, xlabel=L"\textit{xc}", ylabel=L"\textit{yc}", limits=(minimum(xc), maximum(xc), minimum(yc), maximum(yc)))
+    heatmap!(ax1, xc, yc, T_ini', colormap=:heat)
+    Colorbar(fig1[2,1], vertical=false, colormap=:heat, label=L"\textit{T}", limits=(-ΔT/2, ΔT/2))
     fig1
     # Time loop
     for it=1:nt
@@ -88,11 +92,17 @@ set_theme!(fontsize_theme)
         T[[1,end],:] .= T[[2,end-1],:]      # Left and right
         # Visualisation
         if it % nvis == 0
+            qDx_avg .= (qDx[2:end,:] + qDx[1:end-1,:])./2.0
+            qDy_avg .= (qDy[:,2:end] + qDy[:,1:end-1])./2.0
             sleep(1.0)
             empty!(ax1)
             heatmap!(ax1, xc, yc, T, colormap=:heat)
-            Colorbar(fig1[2,1], vertical=false, colormap=:heat, label=L"\textit{T}", limits=(-ΔT/2, ΔT/2))
+            arrows!(ax1, xc[1:qstp:end], yc[1:qstp:end], qDx_avg[1:qstp:end,1:qstp:end], qDy_avg[1:qstp:end,1:qstp:end], arrowsize=10, lengthscale=0.5, normalize=true)
             display(fig1)
+            # Print figure
+            if printFig
+                save(@sprintf("./ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/png/%04d.png",it),fig1)
+            end
         end
     end
 end
