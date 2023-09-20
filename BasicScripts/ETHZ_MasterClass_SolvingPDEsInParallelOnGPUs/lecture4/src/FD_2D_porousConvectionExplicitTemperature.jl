@@ -1,29 +1,30 @@
 # Solving 2D porous convection equation with central finite differences
-using CairoMakie, Printf
+using CairoMakie, Printf, FFMPEG
 fontsize_theme = Theme(fontsize = 25)
 set_theme!(fontsize_theme)
 # Define Function
 @views function porousConvection_2D()
     # Physics
-    lx, ly    = 40.0, 20.0            # Length in x and y
-    k_ηf      = 1.0                   # Diffusion coefficient
-    αρgx,αρgy = 0.0,1.0
-    αρg       = sqrt(αρgx^2+αρgy^2)
-    ΔT        = 200.0
-    ϕ         = 0.1
-    Ra        = 1000
-    λ_ρCp     = 1/Ra*(αρg*k_ηf*ΔT*ly/ϕ) # Ra = αρg*k_ηf*ΔT*ly/λ_ρCp/ϕ
+    lx, ly     = 40.0, 20.0            # Length in x and y
+    k_ηf       = 1.0                   # Diffusion coefficient
+    αρgx,αρgy  = 0.0,1.0
+    αρg        = sqrt(αρgx^2+αρgy^2)
+    ΔT         = 200.0
+    ϕ          = 0.1
+    Ra         = 1000
+    λ_ρCp      = 1/Ra*(αρg*k_ηf*ΔT*ly/ϕ) # Ra = αρg*k_ηf*ΔT*ly/λ_ρCp/ϕ
     # Numerics
-    re        = 2π
-    CFL       = 1.0/sqrt(2.1)
-    ncx, ncy  = 127,63               # Number of cells in x and y
-    ϵtol      = 1e-8                  # Residual tolerance
-    maxiter   = 20*max(ncx,ncy)       # Maximum no. iterations
-    ncheck    = ceil(Int,0.25ncx)     # Convergence check frequency
-    nvis      = 5                     # Visualisation frequency
-    qstp      = 4                     # Quiver density: higher values = less dense
-    aspRat    = lx/ly                 # Model aspect ratio
-    printFig  = true                 # Printing switch
+    re         = 2π
+    CFL        = 1.0/sqrt(2.1)
+    ncx, ncy   = 127,63               # Number of cells in x and y
+    ϵtol       = 1e-8                  # Residual tolerance
+    maxiter    = 20*max(ncx,ncy)       # Maximum no. iterations
+    ncheck     = ceil(Int,0.25ncx)     # Convergence check frequency
+    nvis       = 5                     # Visualisation frequency
+    qstp       = 4                     # Quiver density: higher values = less dense
+    aspRat     = lx/ly                 # Model aspect ratio
+    printFig   = false                 # Printing switch
+    writeMovie = false
     # Derived Numerics
     dx        = lx/ncx                # Spatial step size in x
     dy        = ly/ncy                # Spatial step size in y
@@ -105,6 +106,10 @@ set_theme!(fontsize_theme)
             end
         end
     end
+
+    # Write movie
+    if writeMovie
+        FFMPEG.ffmpeg_exe(`-framerate 2 -f image2 -pattern_type glob -i /Users/lcandiot/Developer/Julia/BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/png/'*'.png -vf "scale=1920:1080" -c:v libx264 -pix_fmt yuv420p -y "/Users/lcandiot/Developer/Julia/BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/out_movie.mov"`)    end
 end
 
 # Call function
