@@ -1,4 +1,4 @@
-# Solving 2D porous convection equation with central finite differences
+# Solving 2D porous convection equation with central finite differences. Fluid pressure time integration scheme is implicit, while temperature is treated explicitly in time. Boundary conditions are defined on temperature and pressure.
 using CairoMakie, Printf, FFMPEG
 fontsize_theme = Theme(fontsize = 25)
 set_theme!(fontsize_theme)
@@ -13,6 +13,8 @@ set_theme!(fontsize_theme)
     ϕ          = 0.1
     Ra         = 1000
     λ_ρCp      = 1/Ra*(αρg*k_ηf*ΔT*ly/ϕ) # Ra = αρg*k_ηf*ΔT*ly/λ_ρCp/ϕ
+    T_Bot      = ΔT/2.0                # BC at domain bottom
+    T_Top      = -ΔT/2.0                #BC at domain top
     # Numerics
     re         = 2π
     CFL        = 1.0/sqrt(2.1)
@@ -81,16 +83,17 @@ set_theme!(fontsize_theme)
         # Compute thermal fluxes
         qTx .= .-λ_ρCp.*diff(T, dims=1)./dx
         qTy .= .-λ_ρCp.*diff(T, dims=2)./dy
-        # Temperture update for diffusion
-        T[2:end-1, 2:end-1] .-= dt.*(diff(qTx[:,2:end-1], dims=1)./dx + diff(qTy[2:end-1,:], dims=2)./dy)
-        # Temperature update for advection
-        T[2:end  ,:] .-= dt./ϕ.*max.(0.0,qDx[2:end-1,:]).*diff(T, dims=1)./dx
-        T[1:end-1,:] .-= dt./ϕ.*min.(qDx[1:end-2,:],0.0).*diff(T, dims=1)./dx
-        T[:,  2:end] .-= dt./ϕ.*max.(0.0,qDy[:,2:end-1]).*diff(T, dims=2)./dy
-        T[:,1:end-1] .-= dt./ϕ.*min.(qDy[:,1:end-2],0.0).*diff(T, dims=2)./dy
+        # Temperature update for diffusion
+        T[2:end-1, 2:end-1] .-= dt.*(diff(qTx[:,2:end-1], dims=1)./dx + diff(qTy[2:end-1,:], dims=2)./dy) # when BC on T
+        #T  .-= dt.*(diff(qTx, dims=1)./dx + diff(qTy, dims=2)./dy)
         # Boundary conditions
-        T[:,1] .= ΔT/2; T[:,end] .= -ΔT/2   # Top and bottom
+        T[:,1] .= T_Bot; T[:,end] .= T_Top   # Top and bottom
         T[[1,end],:] .= T[[2,end-1],:]      # Left and right
+        # Temperature update for advection
+        T[2:end  ,:] .-= dt./ϕ.*max.(0.0,qDx_avg[2:end,:]  ).*diff(T, dims=1)./dx
+        T[1:end-1,:] .-= dt./ϕ.*min.(qDx_avg[1:end-1,:],0.0).*diff(T, dims=1)./dx
+        T[:,  2:end] .-= dt./ϕ.*max.(0.0,qDy_avg[:,2:end]  ).*diff(T, dims=2)./dy
+        T[:,1:end-1] .-= dt./ϕ.*min.(qDy_avg[:,1:end-1],0.0).*diff(T, dims=2)./dy
         # Visualisation
         if it % nvis == 0
             qDx_avg .= (qDx[2:end,:] + qDx[1:end-1,:])./2.0
@@ -109,7 +112,8 @@ set_theme!(fontsize_theme)
 
     # Write movie
     if writeMovie
-        FFMPEG.ffmpeg_exe(`-framerate 2 -f image2 -pattern_type glob -i /Users/lcandiot/Developer/Julia/BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/png/'*'.png -vf "scale=1920:1080" -c:v libx264 -pix_fmt yuv420p -y "/Users/lcandiot/Developer/Julia/BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/out_movie.mov"`)    end
+        FFMPEG.ffmpeg_exe(`-framerate 12 -f image2 -pattern_type glob -i /Users/lcandiot/Developer/Julia/BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/png/'*'.png -vf "scale=1920:1080" -c:v libx264 -pix_fmt yuv420p -y "/Users/lcandiot/Developer/Julia/BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/out_movie.mov"`)    
+    end
 end
 
 # Call function
