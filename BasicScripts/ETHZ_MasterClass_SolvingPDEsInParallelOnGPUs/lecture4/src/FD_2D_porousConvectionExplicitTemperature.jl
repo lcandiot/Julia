@@ -18,22 +18,22 @@ set_theme!(fontsize_theme)
     # Numerics
     re         = 2π
     CFL        = 1.0/sqrt(2.1)
-    ncx, ncy   = 127,63               # Number of cells in x and y
+    ncx, ncy   = 128,64               # Number of cells in x and y
     ϵtol       = 1e-8                  # Residual tolerance
     maxiter    = 20*max(ncx,ncy)       # Maximum no. iterations
     ncheck     = ceil(Int,0.25ncx)     # Convergence check frequency
     nvis       = 5                     # Visualisation frequency
     qstp       = 4                     # Quiver density: higher values = less dense
     aspRat     = lx/ly                 # Model aspect ratio
-    printFig   = false                 # Printing switch
-    writeMovie = false
+    printFig   = true                 # Printing switch
+    writeMovie = true
     # Derived Numerics
     dx        = lx/ncx                # Spatial step size in x
     dy        = ly/ncy                # Spatial step size in y
     dt_diff   = min(dx,dy)^2/λ_ρCp/4.1 # Thermal diffusion time step
     θ_dτ      = max(lx,ly)/re/CFL/min(dx,dy)
     β_dτ      = (re*k_ηf)/(CFL*min(dx,dy)*max(lx,ly))
-    nt        = 1000 #ncx^2/5              # No. of time steps to compute
+    nt        = 500 #ncx^2/5              # No. of time steps to compute
     xc        = LinRange(-lx/2.0+dx/2, lx/2.0-dx/2, ncx) # Coordinate array
     yc        = LinRange(-ly+dy/2,         0.0, ncy) # Coordinate array
     # Initialisation
@@ -51,8 +51,8 @@ set_theme!(fontsize_theme)
     # Plot initial configuration
     fig1      = Figure(figure_padding=30)                 # Plotting
     ax1       = Axis(fig1[1, 1], title="Porous convection 2D", aspect=aspRat, xlabel=L"\textit{xc}", ylabel=L"\textit{yc}", limits=(minimum(xc), maximum(xc), minimum(yc), maximum(yc)))
-    heatmap!(ax1, xc, yc, T_ini', colormap=:heat)
-    Colorbar(fig1[2,1], vertical=false, colormap=:heat, label=L"\textit{T}", limits=(-ΔT/2, ΔT/2))
+    heatmap!(ax1, xc, yc, T_ini', colormap=:jet)
+    Colorbar(fig1[2,1], vertical=false, colormap=:jet, label=L"\textit{T}", limits=(-ΔT/2, ΔT/2))
     fig1
     # Time loop
     for it=1:nt
@@ -62,8 +62,8 @@ set_theme!(fontsize_theme)
             # Computation of fluid pressure flux
             Tx_avg .= (T[2:end,:] .+ T[1:end-1,:])./2.0 
             Ty_avg .= (T[:,2:end] .+ T[:,1:end-1])./2.0
-            qDx[2:end-1,:].-=   1.0./(1.0 + θ_dτ).*(qDx[2:end-1,:] + k_ηf.*diff(Pf, dims=1)./dx .- αρgx.*Tx_avg)                  # Ludo's formulation 
-            qDy[:,2:end-1].-=   1.0./(1.0 + θ_dτ).*(qDy[:,2:end-1] + k_ηf.*diff(Pf, dims=2)./dy .- αρgy.*Ty_avg)                  # Ludo's formulation
+            qDx[2:end-1,:].-=   1.0./(1.0 + θ_dτ).*(qDx[2:end-1,:] + k_ηf.*diff(Pf, dims=1)./dx .- αρgx.*Tx_avg) 
+            qDy[:,2:end-1].-=   1.0./(1.0 + θ_dτ).*(qDy[:,2:end-1] + k_ηf.*diff(Pf, dims=2)./dy .- αρgy.*Ty_avg)
             # Fluid pressure update
             Pf          .-=   (diff(qDx, dims=1)./dx + diff(qDy, dims=2)./dy)./β_dτ
             # Convergence check
@@ -90,17 +90,16 @@ set_theme!(fontsize_theme)
         T[:,1] .= T_Bot; T[:,end] .= T_Top   # Top and bottom
         T[[1,end],:] .= T[[2,end-1],:]      # Left and right
         # Temperature update for advection
-        T[2:end  ,:] .-= dt./ϕ.*max.(0.0,qDx_avg[2:end,:]  ).*diff(T, dims=1)./dx
-        T[1:end-1,:] .-= dt./ϕ.*min.(qDx_avg[1:end-1,:],0.0).*diff(T, dims=1)./dx
-        T[:,  2:end] .-= dt./ϕ.*max.(0.0,qDy_avg[:,2:end]  ).*diff(T, dims=2)./dy
-        T[:,1:end-1] .-= dt./ϕ.*min.(qDy_avg[:,1:end-1],0.0).*diff(T, dims=2)./dy
+        T[2:end  ,:] .-= dt./ϕ.*max.(0.0,qDx[2:end-1,:]).*diff(T, dims=1)./dx
+        T[1:end-1,:] .-= dt./ϕ.*min.(qDx[2:end-1,:],0.0).*diff(T, dims=1)./dx
+        T[:,  2:end] .-= dt./ϕ.*max.(0.0,qDy[:,2:end-1]).*diff(T, dims=2)./dy
+        T[:,1:end-1] .-= dt./ϕ.*min.(qDy[:,2:end-1],0.0).*diff(T, dims=2)./dy
         # Visualisation
         if it % nvis == 0
-            qDx_avg .= (qDx[2:end,:] + qDx[1:end-1,:])./2.0
-            qDy_avg .= (qDy[:,2:end] + qDy[:,1:end-1])./2.0
+            qDx_avg        .= (qDx[2:end,:] .+ qDx[1:end-1,:]); qDy_avg        .= (qDy[:,2:end] .+ qDy[:,1:end-1])
             sleep(1.0)
             empty!(ax1)
-            heatmap!(ax1, xc, yc, T, colormap=:heat)
+            heatmap!(ax1, xc, yc, T, colormap=:jet)
             arrows!(ax1, xc[1:qstp:end], yc[1:qstp:end], qDx_avg[1:qstp:end,1:qstp:end], qDy_avg[1:qstp:end,1:qstp:end], arrowsize=10, lengthscale=0.5, normalize=true)
             display(fig1)
             # Print figure
