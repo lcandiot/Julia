@@ -25,8 +25,8 @@ set_theme!(fontsize_theme)
     nvis       = 5                     # Visualisation frequency
     qstp       = 4                     # Quiver density: higher values = less dense
     aspRat     = lx/ly                 # Model aspect ratio
-    printFig   = true                 # Printing switch
-    writeMovie = true
+    printFig   = false                 # Printing switch
+    writeMovie = false
     # Derived Numerics
     dx        = lx/ncx                # Spatial step size in x
     dy        = ly/ncy                # Spatial step size in y

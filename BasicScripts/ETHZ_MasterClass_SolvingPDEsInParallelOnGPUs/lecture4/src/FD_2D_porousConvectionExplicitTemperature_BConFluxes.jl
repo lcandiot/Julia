@@ -11,7 +11,7 @@ set_theme!(fontsize_theme)
     αρg        = sqrt(αρgx^2+αρgy^2)
     ΔT         = 200.0
     ϕ          = 0.1
-    Ra         = 1000
+    Ra         = 40
     λ_ρCp      = 1/Ra*(αρg*k_ηf*ΔT*ly/ϕ) # Ra = αρg*k_ηf*ΔT*ly/λ_ρCp/ϕ
     T_Bot      = ΔT/2.0                # BC at domain bottom
     T_Top      = -ΔT/2.0                #BC at domain top
@@ -25,8 +25,8 @@ set_theme!(fontsize_theme)
     nvis       = 5                     # Visualisation frequency
     qstp       = 4                     # Quiver density: higher values = less dense
     aspRat     = lx/ly                 # Model aspect ratio
-    printFig   = true                 # Printing switch
-    writeMovie = true
+    printFig   = false                 # Printing switch
+    writeMovie = false
     # Derived Numerics
     dx        = lx/ncx                # Spatial step size in x
     dy        = ly/ncy                # Spatial step size in y
