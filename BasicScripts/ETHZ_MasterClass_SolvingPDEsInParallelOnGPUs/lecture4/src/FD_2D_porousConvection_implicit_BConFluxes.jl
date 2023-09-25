@@ -11,7 +11,7 @@ set_theme!(fontsize_theme)
     αρg        = sqrt(αρgx^2+αρgy^2)
     ΔT         = 200.0
     ϕ          = 0.1
-    Ra         = 40
+    Ra         = 1000
     λ_ρCp      = 1/Ra*(αρg*k_ηf*ΔT*ly/ϕ) # Ra = αρg*k_ηf*ΔT*ly/λ_ρCp/ϕ
     T_Bot      = ΔT/2.0                # BC at domain bottom
     T_Top      = -ΔT/2.0                #BC at domain top
@@ -27,8 +27,8 @@ set_theme!(fontsize_theme)
     qstp       = 4                    # Quiver density: higher values = less dense
     aspRat     = lx/ly                # Model aspect ratio
     # Misc
-    printFig   = false                # Printing switch
-    writeMov   = false                # Write movie switch
+    printFig   = true                # Printing switch
+    writeMov   = true                # Write movie switch
     figName    = "./ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/doc/png/PC_impl_BConFlux"    # Figure name
     movName    = "PC_impl_BConFlux_mov.mov"        # Movie name
     # Derived Numerics
