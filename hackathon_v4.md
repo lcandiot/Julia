@@ -9,7 +9,7 @@ The video below demonstrates the solution of 2D porous convection using an impli
 
 https://github.com/lcandiot/Julia/assets/50524459/f5d31b19-4bfc-4733-b62e-a20e654e82c0
 
-# Vizualisation routines
+# Visualisation routines
 In addition to solver development, I further programmed a routine to generate automatic visual output from HPC simulations on cluster.
 This program is also written in Julia and can be executed after the simulation has completed to generate mp4 files from data stored as hdf5 files.
 # Outcome
