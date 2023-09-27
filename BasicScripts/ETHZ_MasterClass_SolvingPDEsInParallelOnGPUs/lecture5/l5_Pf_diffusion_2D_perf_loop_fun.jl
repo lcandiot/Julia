@@ -1,4 +1,4 @@
-using Plots,Plots.Measures,Printf, Pkg
+using Plots, Plots.Measures, Printf, Pkg, BenchmarkTools
 if isfile("Project.toml") && isfile("Manifest.toml")
     Pkg.activate(".")
 end
@@ -40,27 +40,10 @@ function Pf_diffusion_2D(; do_check=true)
         if iter==warmup_iter
             t_tic = Base.time()
         end
-        # Compute qDx
-        for iy=1:ncy
-            for ix=1:ncx-1
-                # qDx[ix+1,iy] -= (qDx[ix+1,iy] + k_ηf_dx*(Pf[ix+1,iy] - Pf[ix,iy]))*_1_θ_dτ
-                qDx[ix+1,iy] -= (qDx[ix+1,iy] + k_ηf_dx*@d_xa(Pf))*_1_θ_dτ
-            end
-        end
-        # Compute qDy
-        for iy=1:ncy-1
-            for ix=1:ncx
-                # qDy[ix,iy+1] -= (qDy[ix,iy+1] + k_ηf_dy*(Pf[ix,iy+1] - Pf[ix,iy]))*_1_θ_dτ
-                qDy[ix,iy+1] -= (qDy[ix,iy+1] + k_ηf_dy*@d_ya(Pf))*_1_θ_dτ
-            end
-        end
+        # Compute fluxes
+        @inbounds compute_flux!(Pf, qDx, qDy, k_ηf_dx, k_ηf_dy, _1_θ_dτ)
         # Update pressure
-        for iy=1:ncy
-            for ix=1:ncx
-                # Pf[ix,iy] -= ((qDx[ix+1,iy]-qDx[ix,iy])*_dx + (qDy[ix,iy+1]-qDy[ix,iy])*_dy)*_β_dτ
-                Pf[ix,iy] -= (@d_xa(qDx)*_dx + @d_ya(qDy)*_dy)*_β_dτ
-            end
-        end
+        @inbounds update_pressure!(Pf, qDx, qDy, _dx, _dy, _β_dτ)
         if do_check && iter%ncheck == 0
             r_Pf  .= diff(qDx,dims=1)./dx .+ diff(qDy,dims=2)./dy
             err_Pf = maximum(abs.(r_Pf))
@@ -70,13 +53,51 @@ function Pf_diffusion_2D(; do_check=true)
         iter += 1
     end
     # Monitor timing
-    t_toc = Base.time()                         # End time [s]
+    #t_toc = Base.time()                         # End time [s]
+    t_toc = @belapsed compute!($Pf, $qDx, $qDy, $_dx, $_dy, $_β_dτ, $k_ηf_dx, $k_ηf_dy, $_1_θ_dτ)
     niter = iter
     A_eff = (3*8)*(ncx-1)*(ncy) + (3*8)*(ncx)*(ncy-1) + (3*8)*(ncx)*(ncy) # Example for qDx: 1 read and 1 write for qDx, 1 read for Pf
     t_it  = (t_toc-t_tic)/(niter-warmup_iter)   # Time per iteration [s]
     T_eff = A_eff/t_it                          # Effective memory throughput [GB/s]
-    @printf("Elapsed time = %1.3f s; No. iterations = %d; Time / iteration = %1.3f s; T_eff = %1.3f GB/s\n", t_toc-t_tic, niter-warmup_iter, t_it, T_eff/1e9)
+    # @printf("Elapsed time = %1.3f s; No. iterations = %d; Time / iteration = %1.3f s; T_eff = %1.3f GB/s\n", t_toc-t_tic, niter-warmup_iter, t_it, T_eff/1e9)
+    @printf("Elapsed time = %1.3e s\n", t_toc)
+    # Monitor one iteration
+    
     return
+end
+
+# Compute functions
+function compute_flux!(Pf, qDx, qDy, k_ηf_dx, k_ηf_dy, _1_θ_dτ)
+    ncx,ncy = size(Pf)
+    # Compute qDx
+    for iy=1:ncy
+        for ix=1:ncx-1
+            qDx[ix+1,iy] -= (qDx[ix+1,iy] + k_ηf_dx*@d_xa(Pf))*_1_θ_dτ
+        end
+    end
+    # Compute qDy
+    for iy=1:ncy-1
+        for ix=1:ncx
+            qDy[ix,iy+1] -= (qDy[ix,iy+1] + k_ηf_dy*@d_ya(Pf))*_1_θ_dτ
+        end
+    end
+    return nothing
+end
+
+function update_pressure!(Pf, qDx, qDy, _dx, _dy, _β_dτ)
+    ncx,ncy = size(Pf)
+    for iy=1:ncy
+        for ix=1:ncx
+            Pf[ix,iy] -= (@d_xa(qDx)*_dx + @d_ya(qDy)*_dy)*_β_dτ
+        end
+    end
+    return nothing
+end
+
+function compute!(Pf, qDx, qDy, _dx, _dy, _β_dτ, k_ηf_dx, k_ηf_dy, _1_θ_dτ)
+   @inbounds compute_flux!(Pf, qDx, qDy, k_ηf_dx, k_ηf_dy, _1_θ_dτ)
+   @inbounds update_pressure!(Pf, qDx, qDy, _dx, _dy, _β_dτ)
+   return nothing 
 end
 
 Pf_diffusion_2D(; do_check=false)
