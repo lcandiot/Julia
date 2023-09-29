@@ -12,7 +12,7 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true)
     lx,ly   = 20.0,20.0
     k_ηf    = 1.0
     # numerics
-    nx = ny     = 16 * 2 .^(2:5) .- 1              # Array resolution#nx,ny   = 511,511
+    nx = ny     = 16 * 2 .^(2:5) .-1             # Array resolution#nx,ny   = 511,511
     T_eff       = zeros(Float64, length(nx))
     # Unit testing
     testValues  = [[0.00785398056115133 0.007853980637555755 0.007853978592411982], 
@@ -20,7 +20,7 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true)
                    [0.00740912103848251 0.009143711648167267 0.007419533048751209],
                    [0.00566813765849919 0.004348785338575644 0.005618691590498087]]
     for iRes in eachindex(nx)
-        ϵtol    = 1e-9
+        ϵtol    = 1e-8
         maxiter = 500;#max(nx,ny)
         ncheck  = ceil(Int,0.25max(nx[iRes],ny[iRes]))
         cfl     = 1.0/sqrt(2.1)
@@ -62,19 +62,9 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true)
             end
             iter += 1
         end
-        # Monitor timing
-        #t_toc = Base.time()                         # End time [s]
-        t_toc = @belapsed compute!($Pf, $qDx, $qDy, $_dx, $_dy, $_β_dτ, $k_ηf_dx, $k_ηf_dy, $_1_θ_dτ)
-        niter = iter
-        A_eff = (3*8)*(nx[iRes]-1)*(ny[iRes]) + (3*8)*(nx[iRes])*(ny[iRes]-1) + (3*8)*(nx[iRes])*(ny[iRes]) # Example for qDx: 1 read and 1 write for qDx, 1 read for Pf
-        #t_it  = (t_toc-t_tic)/(niter-warmup_iter)   # Time per iteration [s]
-        t_it = t_toc
-        T_eff[iRes] = A_eff/t_it                          # Effective memory throughput [GB/s]
-        @printf("Elapsed time = %1.3f s; No. iterations = %d; Time / iteration = %1.3f s; T_eff = %1.3f GB/s\n", t_toc-t_tic, niter, t_it, T_eff[iRes]/1e9)
-        #@printf("Elapsed time = %1.3e s\n", t_toc)
         # Unit testing
         @testset "Pf test set" begin
-            @test Pf[xtest, ytest]' ≈ testValues[iRes] atol=1e-2
+            @test Pf[xtest, ytest]' ≈ testValues[iRes]
         end
     end
     # Write output
