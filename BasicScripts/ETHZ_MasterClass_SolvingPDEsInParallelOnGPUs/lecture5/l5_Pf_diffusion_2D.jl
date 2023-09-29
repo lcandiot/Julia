@@ -1,4 +1,4 @@
-using Plots,Plots.Measures,Printf
+using Printf
 default(size=(600,500),framestyle=:box,label=false,grid=false,margin=10mm,lw=6,labelfontsize=11,tickfontsize=11,titlefontsize=11)
 
 function Pf_diffusion_2D()
