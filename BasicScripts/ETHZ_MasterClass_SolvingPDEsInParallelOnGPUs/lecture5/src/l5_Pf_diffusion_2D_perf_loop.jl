@@ -82,9 +82,11 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true)
     end
     # Write output
     if writeOut
-        h5write("./data/Pf_diffusion_2D_perf_loop.h5", "monitor/T_eff", T_eff)
-        h5write("./data/Pf_diffusion_2D_perf_loop.h5", "model/nx",      nx   )
-        h5write("./data/Pf_diffusion_2D_perf_loop.h5", "model/ny",      ny   ) 
+        h5open("./data/Pf_diffusion_2D_perf_loop.h5", "w") do outFile
+            write(outFile, "monitor/T_eff", T_eff)
+            write(outFile, "model/nx",      nx   )
+            write(outFile, "model/ny",      ny   ) 
+        end
     end
     # Return
     return

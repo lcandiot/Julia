@@ -1,4 +1,7 @@
 using Plots,Plots.Measures,Printf, CairoMakie, BenchmarkTools, HDF5
+if isfile("Project.toml") && isfile("Manifest.toml")
+    Pkg.activate(".")
+end
 default(size=(600,500),framestyle=:box,label=false,grid=false,margin=10mm,lw=6,labelfontsize=11,tickfontsize=11,titlefontsize=11)
 
 function Pf_diffusion_2D(; do_check=true, writeOut=true)
@@ -60,9 +63,11 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true)
     end
     # Write output
     if writeOut
-        h5write("./data/Pf_diffusion_2D_perf.h5", "monitor/T_eff", T_eff)
-        h5write("./data/Pf_diffusion_2D_perf.h5", "model/nx",      nx   )
-        h5write("./data/Pf_diffusion_2D_perf.h5", "model/ny",      ny   ) 
+        h5open("./data/Pf_diffusion_2D_perf.h5", "w") do outFile
+            write(outFile, "monitor/T_eff", T_eff)
+            write(outFile, "model/nx",      nx   )
+            write(outFile, "model/ny",      ny   ) 
+        end
     end
     # Return
     return

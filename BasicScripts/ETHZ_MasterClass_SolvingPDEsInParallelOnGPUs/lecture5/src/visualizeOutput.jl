@@ -11,7 +11,7 @@ end
 
 function visualizeOutput(; printFig=true)
     nx = 16 * 2 .^(1:8)
-    # Data location
+    # Path and file variables
     datPath = "./data/"
     docPath = "./doc/"
     outName = ["Pf_diffusion_2D_perf.h5", "Pf_diffusion_2D_perf_loop.h5", "Pf_diffusion_2D_perf_loop_fun.h5", "memcpy_ap.h5", "memcpy_kp.h5"]
@@ -22,7 +22,7 @@ function visualizeOutput(; printFig=true)
     # Load and plot my data 
     for iFile in eachindex(outName) 
         fname = "$(datPath)$(outName[iFile])"
-        dat = readThroughput(fname)
+        dat   = readThroughput(fname)
         # Visualize
         lines!(ax1, dat.nx.*dat.ny ,dat.T_eff/1e9, label=outName[iFile])
         if iFile==1
@@ -45,10 +45,13 @@ end
 # Read input function
 function readThroughput(fname)
     # Store data in struct
-    dat = dataStructure(h5read(fname,"/model/nx"), 
-    h5read(fname,"/model/ny"), 
-    h5read(fname,"/monitor/T_eff"))
-    # Return data struct
+    dat = h5open(fname,"r") do outFile
+        dat = dataStructure(read(outFile,"/model/nx"), 
+                            read(outFile,"/model/ny"), 
+                            read(outFile,"/monitor/T_eff"))
+        # Return
+        return dat
+    end
     return dat
 end
 
