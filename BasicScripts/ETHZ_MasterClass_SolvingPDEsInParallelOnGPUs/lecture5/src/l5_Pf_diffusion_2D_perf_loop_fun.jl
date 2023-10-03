@@ -56,7 +56,7 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true)
         end
         # Monitor timing
         #t_toc = Base.time()                         # End time [s]
-        t_toc = @belapsed compute!($Pf, $qDx, $qDy, $_dx, $_dy, $_β_dτ, $k_ηf_dx, $k_ηf_dy, $_1_θ_dτ)
+        t_toc = @belapsed begin compute!($Pf, $qDx, $qDy, $_dx, $_dy, $_β_dτ, $k_ηf_dx, $k_ηf_dy, $_1_θ_dτ) end
         niter = iter
         A_eff = (3*8)*(nx[iRes]-1)*(ny[iRes]) + (3*8)*(nx[iRes])*(ny[iRes]-1) + (3*8)*(nx[iRes])*(ny[iRes]) # Example for qDx: 1 read and 1 write for qDx, 1 read for Pf
         #t_it  = (t_toc-t_tic)/(niter-warmup_iter)   # Time per iteration [s]
@@ -111,4 +111,4 @@ function compute!(Pf, qDx, qDy, _dx, _dy, _β_dτ, k_ηf_dx, k_ηf_dy, _1_θ_dτ
    return nothing 
 end
 
-Pf_diffusion_2D(; do_check=false, writeOut=true)
+Pf_diffusion_2D(; do_check=false, writeOut=false)
