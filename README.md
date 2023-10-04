@@ -30,8 +30,12 @@ The image below shows the result of a steady-state diffusion simulation as well 
 
 ![Alt text](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture3/doc/steadyStateDiffusion_implicit_1D.png?raw=true)
 
-# Porous convection 2D
-Two codes have been developed treating the time integration either explicitly or implicitly. The temperature perturbation in the middle of the domain heated from bottom and cooled from top induces local differences in the specific gravity of the fluid. Hot fluid from the bottom rises and cold fluid from the top sinks down producing a convective pattern.-> [Porous convection 2D explicit time integration](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/src/FD_2D_porousConvectionExplicitTemperature.jl)
+## Porous convection 2D
+Two codes have been developed treating the time integration of temperature either [explicitly](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/src/FD_2D_porousConvectionExplicitTemperature_BConFluxes.jl) or [implicitly](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture4/src/FD_2D_porousConvection_implicit_BConFluxes.jl).
 
-https://github.com/lcandiot/Julia/assets/50524459/b88e72c3-e671-46f3-adda-a719291e9fcd
+The movie below shows the simulation of convection in a porous medium in 2D. A thermal anomaly is emplaced in the center of the domain to kickstart convection. The system is heated from below and cooled from above to maintain convection over time. Boundary conditions are implemented on the fluxes, i.e. directly on the model boundary.
+
+<video autoplay loop>
+  <source src=https://github.com/lcandiot/Julia/assets/50524459/a683f976-da68-4e8b-906a-fefc923e4d44 type="video/mp4">
+</video>
 
