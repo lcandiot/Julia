@@ -35,7 +35,7 @@ Two codes have been developed treating the time integration of temperature eithe
 
 The movie below shows the simulation of convection in a porous medium in 2D. A thermal anomaly is emplaced in the center of the domain to kickstart convection. The system is heated from below and cooled from above to maintain convection over time. Boundary conditions are implemented on the fluxes, i.e. directly on the model boundary.
 
-https://github.com/lcandiot/Julia/assets/50524459/a683f976-da68-4e8b-906a-fefc923e4d44
+https://github.com/lcandiot/Julia/assets/50524459/99eacfac-ed2f-4c3d-a9b4-60debb29b52b
 
 ## Scaling benchmark
 ### Description
