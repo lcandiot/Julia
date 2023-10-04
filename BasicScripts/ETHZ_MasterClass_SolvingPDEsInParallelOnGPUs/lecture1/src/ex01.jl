@@ -1,5 +1,8 @@
 # Car travel 1D
-using Plots
+using Pkg, Plots
+if isfile("Project.toml") && isfile("Manifest.toml")
+    Pkg.activate(".")
+end
 
 @views function car_travel_1D()
     # Physics

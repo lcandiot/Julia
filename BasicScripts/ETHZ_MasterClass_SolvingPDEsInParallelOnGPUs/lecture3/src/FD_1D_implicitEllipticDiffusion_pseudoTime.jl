@@ -1,8 +1,13 @@
-# Solving 1D damped wave equation with central finite differences
-using GLMakie
-GLMakie.activate!()
+# Solving 1D diffusion equation to steady state with central finite differences
+using Pkg, CairoMakie
+if isfile("Project.toml") && isfile("Manifest.toml")
+    Pkg.activate(".")
+end
+# Theme
+myTheme = Theme(fontsize = 25)
+set_theme!(myTheme)
 # Define Function
-@views function dampedWaveEquation_implicit_1D()
+@views function steadyDiffusion_implicit_1D()
     # Physics
     lx      = 20.0                  # Length in x
     dc      = 1.0                   # Diffusion coefficient
@@ -19,7 +24,7 @@ GLMakie.activate!()
     C       = @. 1.0+exp(-(xc-lx/4)^2) - xc/lx; C_ini = copy(C)
     qx      = zeros(Float64, ncx-1)
     fig1    = Figure()                 # Plotting
-    ax      = Axis(fig1[1, 1], title = "Damped wave 1D", ylabel = "C", xlabel = "x")
+    ax      = Axis(fig1[1, 1], xlabel=L"\textit{x}[m]", ylabel=L"\textit{C}[mol]", limits=(0, lx, 0, 2), title="1D Steady-state Diffusion (impl.)")
     lines!(ax, xc, C)
     lines!(ax, xc, C_ini)
     display(fig1) 
@@ -31,7 +36,7 @@ GLMakie.activate!()
         C[2:end-1] .-=   dt.* diff(qx)./dx
         # Visualisation
         if it%nVis == 0
-            sleep(0.1)
+            sleep(0.05)
             empty!(ax)
             lines!(ax, xc, C, color = :blue)
             lines!(ax, xc, C_ini, color = :orange)
@@ -41,4 +46,4 @@ GLMakie.activate!()
 end
 
 # Call function
-dampedWaveEquation_implicit_1D()
+steadyDiffusion_implicit_1D()

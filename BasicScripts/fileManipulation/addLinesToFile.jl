@@ -1,5 +1,7 @@
 # This script identifies text file in a given directory and appends a new line at the end of each file. Developed to keep MDOODZ .txt files clean such that all parameters are read in properly.
-
+if isfile("Project.toml") && isfile("Manifest.toml")
+    Pkg.activate(".")
+end
 function cleanTxtFiles()
     # Set vars
     targetDir = "/Users/lcandiot/Developer/Julia/BasicScripts/data/"

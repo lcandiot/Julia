@@ -1,7 +1,7 @@
-# Solving 2D advection diffusion equation with central finite differences
+# Solving 2D advection diffusion equation with central finite differences and implicit time integration
 using CairoMakie#GLMakie
 CairoMakie.activate!()#GLMakie.activate!()
-fontsize_theme = Theme(fontsize = 30)
+fontsize_theme = Theme(fontsize = 40)
 set_theme!(fontsize_theme)
 # Define Function
 @views function advectionDiffusion_implicit_1D()
@@ -33,7 +33,7 @@ set_theme!(fontsize_theme)
     qx      = zeros(Float64, ncx-1, ncy  )
     qy      = zeros(Float64, ncx  , ncy-1)
     fig1    = Figure(resolution = (1500, 1500))                 # Plotting
-    ax1     = Axis(fig1[1, 1], xlabel=L"\textit{lx}", ylabel=L"\textit{ly}")
+    ax1     = Axis(fig1[1, 1], xlabel=L"\textit{lx}", ylabel=L"\textit{ly}", title="2D Diffusion-Advection")
     ax2     = Axis(fig1[2, 1:2], yscale = log10, xlabel=L"\textit{iter/nx}", ylabel=L"\textit{err}")
     update_theme!(fontsize=30)
     heatmap!(ax1, xc, yc, C)
@@ -61,11 +61,12 @@ set_theme!(fontsize_theme)
         C[:,1:end-1] .-= dt.*min(vy,0.0).*diff(C, dims=2)./dy
         # Visualisation
         if it % nvis == 0
-            sleep(0.1)
+            sleep(0.01)
             empty!(ax1)
             empty!(ax2, )
             heatmap!(ax1, xc, yc, C)
-            ax1.title = L"\textit{t} = %$(time)"
+            ax2.title = L"\textit{t} = %$(time)"
+            scatter!(ax2, iter_evo, err_evo, color = :blue)
             lines!(ax2, iter_evo, err_evo, color = :blue)
             display(fig1)
         end

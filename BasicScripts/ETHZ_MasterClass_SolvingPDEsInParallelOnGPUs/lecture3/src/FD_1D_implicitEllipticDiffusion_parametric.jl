@@ -1,8 +1,11 @@
 # Solving 1D diffusion equation to steady state with central finite differences
-using GLMakie
-GLMakie.activate!()
-fontsize_theme = Theme(fontsize = 30)
-set_theme!(fontsize_theme)
+using Pkg, CairoMakie
+if isfile("Project.toml") && isfile("Manifest.toml")
+    Pkg.activate(".")
+end
+# Theme
+myTheme = Theme(fontsize = 25)
+set_theme!(myTheme)
 # Define Function
 @views function steadyDiffusion_implicit_1D()
     # Physics
@@ -28,8 +31,8 @@ set_theme!(fontsize_theme)
         qx      = zeros(Float64, ncx-1)
         iter = 1; err = 2ϵtol; iter_evo = Float64[]; err_evo = Float64[]
         fig1    = Figure()                 # Plotting
-        ax1     = Axis(fig1[1, 1], xlabel=L"\textit{x}", ylabel=L"\textit{C}")
-        ax2     = Axis(fig1[2, 1], xlabel=L"iter/ncx", ylabel=L"\textit{err}", yscale = log10)
+        ax1     = Axis(fig1[1, 1], xlabel=L"\textit{x}[m]", ylabel=L"\textit{C}[mol]", limits=(0, lx, 0, 2), title="1D Steady-state Diffusion (impl.)")
+        ax2     = Axis(fig1[2, 1], yscale = log10, xlabel=L"\textit{iter/ncx}", ylabel=L"||\textit{r}||_{∞}")
         lines!(ax1, xc, C, color = :blue, label=L"\textit{C}")
         lines!(ax1, xc, C_ini, color = :orange, label=L"\textit{C}_{ini}")
         lines!(ax2, iter_evo, err_evo, color = :blue)
@@ -45,11 +48,12 @@ set_theme!(fontsize_theme)
             if iter % ncheck == 0
                 err = maximum(abs.(diff(dc.*diff(C)./dx)./dx))
                 push!(iter_evo, iter/ncx); push!(err_evo, err)
-                sleep(0.1)
+                sleep(0.05)
                 empty!(ax1)
                 empty!(ax2)
                 lines!(ax1, xc, C, color = :blue, label=L"\textit{C}")
                 lines!(ax1, xc, C_ini, color = :orange, label=L"\textit{C}_{ini}")
+                scatter!(ax2, iter_evo, err_evo, color = :blue)
                 lines!(ax2, iter_evo, err_evo, color = :blue)
                 display(fig1)
             end
@@ -58,15 +62,15 @@ set_theme!(fontsize_theme)
         conv[ifact] = iter/ncx
         # Save figure
         if ifact == length(fact)
-            save("./ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture3/png/steadyStateDiffusion_implicit_1D.png", fig1)
+            save("./doc/steadyStateDiffusion_implicit_1D.png", fig1)
         end
     end
     # Visualise result of parametric study
     fig2 = Figure()
     ax3  = Axis(fig2[1,1], xlabel="factor", ylabel="iter/ncx")
     lines!(ax3, fact, conv)  
-    display(GLMakie.Screen(), fig2)
-    save("./ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture3/png/parametricStudy.png", fig2)    
+    display(fig2)
+    save("./doc/parametricStudy.png", fig2)    
 end
 
 # Call function
