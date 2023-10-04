@@ -1,7 +1,24 @@
 # Julia
 
-This repository contains a divers set of algorithms written in Julia language.
-These perform different tasks from simple function exercises up to solving PDEs. 
+This repository contains a divers set of algorithms written in the Julia language.
+The developed programs showcase different types like tuples, sets or functions, partial differential equation solvers for multidimensional problems, as well as scaling benchmarks, and unit testing.
+
+## Types
+A basic example of a function that calculates the sum of numbers in Julia can be programmed as
+```
+function summit(args...)
+    sum = 0
+    for a in args
+        sum += a 
+    end
+
+    return sum
+end
+println(summit(1,2))
+```
+This code snippet can be copied and executed in a Julia REPL. More examples can be found in -> [Types](BasicScripts/types).
+
+
 
 # Steady-state diffusion solver
 
