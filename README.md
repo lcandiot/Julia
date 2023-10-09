@@ -37,7 +37,7 @@ The movie below shows the simulation of convection in a porous medium in 2D. A t
 
 https://github.com/lcandiot/Julia/assets/50524459/99eacfac-ed2f-4c3d-a9b4-60debb29b52b
 
-## Scaling benchmark
+## Apple M1 Pro CPU scaling benchmark
 ### Description
 Different implementations of a Darcy equation solver have been developed. These include an optimized Julia [array programming](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture5/src/l5_Pf_diffusion_2D_perf.jl) version in which all division operations of flux calculations and pressure update have been replaced by inverse multiplications. Based on this implementation, another version has been developed. There the flux calculations and pressure update are executed using [loops](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture5/src/l5_Pf_diffusion_2D_perf_loop.jl). Julia is already optimized for loops and thus an increase in performance compared to array programming is expected. Finally, the flux calculations and the pressure update have been wrapped into [kernels](BasicScripts/ETHZ_MasterClass_SolvingPDEsInParallelOnGPUs/lecture5/src/l5_Pf_diffusion_2D_perf_loop_fun.jl). Multi-threading has been activated for the loop versions and simulations were performed on 10 Julia Threads. The [Julia BenchmarkTools](https://juliaci.github.io/BenchmarkTools.jl/stable/) have been used for evaluation and the benchmark has been performed on an Apple Silicon M1 Pro chip (2021). For comparison, results are evaluated against memory copying operations (both for array and kernel programming). Memory copying is measured by taking the elapsed time for computation manually. The figure below shows the benchmark results.  
 
