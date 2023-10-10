@@ -1,4 +1,4 @@
-# Benchmarking kernel programming on Apple Silicon GPU using a manual approach for time keeping (w/ loops).
+# Benchmarking kernel programming on Apple Silicon GPU using Julias benchmarking tools
 import Pkg
 if isfile("Project.toml") && isfile("Manifest.toml")
     Pkg.activate(".")
@@ -13,14 +13,9 @@ function memcopy!(A, B)
     return nothing
 end
 
-# Define iteration function
-function run_iterations!(A, B, iters, threads, groups)
-    tic = time_ns()
-    for _ = 1:iters
-        Metal.@sync @metal threads=threads groups=groups memcopy!(A,B)
-    end
-    t_it = (time_ns() - tic)/iters * 1e-9   # * 1e-9 because t_it would be in nanoseconds
-    return t_it
+# Define run memcopy function
+function run_memcopy!(A, B, threads, groups)
+    Metal.@sync @metal threads=threads groups=groups memcopy!(A,B)
 end
 
 # Main function
@@ -29,24 +24,20 @@ function run_benchmark_KP(dtype=Float32)
     device      = MTLDevice(1)
     array_sizes = []
     throughputs = []
-
     # Benchmark loop
-    warm_up, iterations = 5, 35
     for pow = 0:11
         # Current resolution
         nx = ny = 32*2^pow
-        maxBuff = 3*nx*ny*sizeof(dtype)
         # Sanity check, memory allocation, and initialisation
+        maxBuff = 3*nx*ny*sizeof(dtype)
         if (maxBuff > device.maxBufferLength) break; end
         A = MtlArray(zeros(dtype, nx, ny));
         B = MtlArray(rand(dtype, nx, ny));
         # Define threads per group and no. groups
-        threads = (16,16)
+        threads = (32,32)
         groups  = cld.(size(A), threads)
-        # Do warm-up iterations
-        run_iterations!(A, B, warm_up, threads, groups)
         # Take time
-        t_it = run_iterations!(A, B, (iterations-warm_up), threads, groups)
+        t_it = @belapsed begin run_memcopy!($A, $B, $threads, $groups) end
         # Calculate memory throughput
         T_tot = 2/2^30*nx*ny*sizeof(dtype)/t_it
         push!(array_sizes, nx)
