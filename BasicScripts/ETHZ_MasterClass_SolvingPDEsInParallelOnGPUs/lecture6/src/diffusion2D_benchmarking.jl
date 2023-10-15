@@ -23,7 +23,7 @@ function diffusion2D()
     lx, ly   = Float32(10.0), Float32(10.0)                                   # Length of computational domain in dimension x and y
 
     # Numerics
-    nx, ny   = Int32(32*2), Int32(32*2)                                   # Number of gridpoints in dimensions x and y
+    nx, ny   = Int32(4096), Int32(4096)                                   # Number of gridpoints in dimensions x and y
     # nt       = Int32(100)                                          # Number of time steps
     dx       = Float32(lx/(nx-1))                                    # Space step in x-dimension
     dy       = Float32(ly/(ny-1))                                    # Space step in y-dimension
@@ -57,14 +57,19 @@ function diffusion2D()
     # end
 
     # Benchmark
-    t_it = @belapsed begin runBenchmark($T, $Ci, $qTx, $qTy, $dTdt, $lam, $dt, $_dx, $_dy) end
-    T_tot_lb = 10.0 /1e9 * nx * ny * sizeof(Float32) / t_it
-    println("nx*ny = $(nx*ny); T_tot_lb = $(T_tot_lb)")
+    # t_it = @belapsed begin runBenchmark!($T, $Ci, $qTx, $qTy, $dTdt, $lam, $dt, $_dx, $_dy); Metal.synchronize() end
+    t_it = @belapsed begin Metal.@sync diffusion2D_step!($T, $Ci, $qTx, $qTy, $dTdt, $lam, $dt, $_dx, $_dy); end
+    T_tot_lb = 11.0 /(2^30) * nx * ny * sizeof(Float32) / t_it
+    println("nx*ny = $(nx*ny); T_tot_lb = $(T_tot_lb) GB/s; t_it = $(t_it) s")
+    t_it_task1 = t_it
+    T_tot_lb_task1 = T_tot_lb
+
+    # Return
     return
 end
 
 # Define diffusion step function
-@inbounds @views function diffusion2D_step!(T, Ci, qTx, qTy, dTdt, lam, dt, _dx, _dy)
+@views function diffusion2D_step!(T, Ci, qTx, qTy, dTdt, lam, dt, _dx, _dy)
     qTx     .= .-lam.*@d_xi(T).*_dx                              # Fourier's law of heat conduction: qT_x  = -λ ∂T/∂x
     qTy     .= .-lam.*@d_yi(T).*_dy                              # ...                               qT_y  = -λ ∂T/∂y
     dTdt    .= @inn(Ci).*(.-@d_xa(qTx).*_dx .- @d_ya(qTy).*_dy)  # Conservation of energy:           ∂T/∂t = 1/cp (-∂qT_x/∂x - ∂qT_y/∂y)
@@ -73,8 +78,8 @@ end
 end
 
 # Define run function
-function runBenchmark(T, Ci, qTx, qTy, dTdt, lam, dt, _dx, _dy) 
-    Metal.@sync @metal diffusion2D_step!(T, Ci, qTx, qTy, dTdt, lam, dt, _dx, _dy)
+function runBenchmark!(T, Ci, qTx, qTy, dTdt, lam, dt, _dx, _dy) 
+    diffusion2D_step!(T, Ci, qTx, qTy, dTdt, lam, dt, _dx, _dy)
 end
 
 # Run diffusion
