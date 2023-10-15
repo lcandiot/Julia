@@ -36,6 +36,7 @@ function run_benchmark_KP(dtype=Float32)
         # Current resolution
         nx = ny = 32 * 2^pow
         maxBuff = 3 * nx * ny * sizeof(dtype)
+
         # Sanity check, memory allocation, and initialisation
         if (maxBuff > device.maxBufferLength)
             break
@@ -43,13 +44,17 @@ function run_benchmark_KP(dtype=Float32)
         A = MtlArray(zeros(dtype, nx, ny))
         B = MtlArray(rand(dtype, nx, ny))
         C = MtlArray(rand(dtype, nx, ny))
+
         # Define threads per group and no. groups
         threads = (16, 16)
         groups = cld.(size(A), threads)
+
         # Do warm-up iterations
         run_iterations!(A, B, C, warm_up, threads, groups)
+        
         # Take time
         t_it = run_iterations!(A, B, C, (iterations - warm_up), threads, groups)
+        
         # Calculate memory throughput
         T_tot = 3 / 2^30 * nx * ny * sizeof(dtype) / t_it
         push!(array_sizes, nx)
