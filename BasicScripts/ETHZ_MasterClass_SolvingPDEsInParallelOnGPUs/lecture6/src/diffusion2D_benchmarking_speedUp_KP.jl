@@ -67,7 +67,7 @@ end
 
 # Define diffusion step function
 function diffusion2D_step!(T2, T, Ci, lam, dt, _dx, _dy)
-    threads = (16,16)
+    threads = (16,16) # 16 by 16 seems to be the most performant configuration
     groups  = cld.(size(T2), threads)
     Metal.@sync @metal threads=threads groups=groups updateTemperature!(T2, T, Ci, lam, dt, _dx, _dy)
 end
