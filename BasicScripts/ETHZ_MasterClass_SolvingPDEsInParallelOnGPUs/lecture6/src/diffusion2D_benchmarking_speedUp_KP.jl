@@ -24,7 +24,7 @@ function diffusion2D()
 
     # Numerics
     nx, ny   = Int32(32768), Int32(32768)                                   # Number of gridpoints in dimensions x and y
-    # nt       = Int32(200)                                          # Number of time steps
+    nt       = Int32(200)                                          # Number of time steps
     dx       = Float32(lx/(nx-1))                                    # Space step in x-dimension
     dy       = Float32(ly/(ny-1))                                    # Space step in y-dimension
     # _dx, _dy = Float32(1.0/dx), Float32(1.0/dy)
@@ -57,7 +57,7 @@ function diffusion2D()
     # end
 
     # Benchmark
-    t_it = @belapsed begin runBenchmark!($T2, $T, $Ci, $lam, $dt, $_dx, $_dy); end
+    t_it = @belapsed begin diffusion2D_step!($T2, $T, $Ci, $lam, $dt, $_dx, $_dy); end
     T_tot_lb = 3.0 /(2^30) * nx * ny * sizeof(Float32) / t_it
     println("nx*ny = $(nx*ny); T_tot_lb = $(T_tot_lb) GB/s; t_it = $(t_it) s")
 
@@ -67,17 +67,21 @@ end
 
 # Define diffusion step function
 function diffusion2D_step!(T2, T, Ci, lam, dt, _dx, _dy)
-    @inbounds @views T2[2:end-1,2:end-1] .= T[2:end-1,2:end-1] .+ dt.* Ci[2:end-1,2:end-1] .*
-    ( 
-             .-( lam.*_dx.*( (.-(T[3:end,2:end-1].-T[2:end-1,2:end-1])) .- (.-(T[2:end-1,2:end-1].-T[1:end-2,2:end-1])) ) ).*_dx 
-             .-( lam.*_dy.*( (.-(T[2:end-1,3:end].-T[2:end-1,2:end-1])) .- (.-(T[2:end-1,2:end-1].-T[2:end-1,1:end-2])) ) ).*_dy
-    )                               # Update of temperature             T_new = T_old + ∂t ∂T/∂t
-    return nothing
+    threads = (16,16)
+    groups  = cld.(size(T2), threads)
+    Metal.@sync @metal threads=threads groups=groups updateTemperature!(T2, T, Ci, lam, dt, _dx, _dy)
 end
-
-# Define run function
-function runBenchmark!(T2, T, Ci, lam, dt, _dx, _dy) 
-    Metal.@sync diffusion2D_step!(T2, T, Ci, lam, dt, _dx, _dy)
+function updateTemperature!(T2, T, Ci, lam, dt, _dx, _dy)
+    ix, iy = thread_position_in_grid_2d()
+    nx, ny = size(T2)
+    if (ix>=2 && ix<=nx-1 && iy>=2 && iy<=ny-1)
+        @inbounds T2[ix,iy] = T[ix,iy] + dt * Ci[ix,iy] *
+        ( 
+            -( lam*_dx*( (-(T[ix+1,iy  ]-T[ix,iy])) - (-(T[ix,iy]-T[ix-1,iy  ])) ) )*_dx 
+            -( lam*_dy*( (-(T[ix  ,iy+1]-T[ix,iy])) - (-(T[ix,iy]-T[ix  ,iy-1])) ) )*_dy
+        )                               # Update of temperature             T_new = T_old + ∂t ∂T/∂t
+    end
+    return nothing
 end
 
 # Run diffusion
