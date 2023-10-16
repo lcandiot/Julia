@@ -59,7 +59,7 @@ function diffusion2D()
     # Benchmark
     t_it = @belapsed begin runBenchmark!($T, $Ci, $qTx, $qTy, $dTdt, $lam, $dt, $_dx, $_dy); end
     T_tot_lb = 11.0 /(2^30) * nx * ny * sizeof(Float32) / t_it
-    T_eff    = 3.0 /(2^30) * nx * ny * sizeof(Float32) / t_it
+    T_eff    = 9.0 /(2^30) * nx * ny * sizeof(Float32) / t_it
     println("nx*ny = $(nx*ny); T_tot_lb = $(T_tot_lb) GB/s; T_eff = $(T_eff) GB/s; t_it = $(t_it) s")
     t_it_task1     = t_it
     T_tot_lb_task1 = T_tot_lb

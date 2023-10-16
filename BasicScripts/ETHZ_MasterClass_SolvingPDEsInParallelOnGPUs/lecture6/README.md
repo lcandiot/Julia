@@ -10,3 +10,5 @@ In following a benchmark for 2D diffusion algorithms is performed. Both array an
 T_eff = 2*D_u + D_k
 ```
 whereby `D_u` is the number of unknown fields (i.e., that depend on their history) and `D_k` is the number of known fields (variables that do not depend on their history). 
+
+Maximum effective throughput is ca. 163 GB/s and the computational time for a single iteration is ca. 0.07 s. Reaching this limit requires kernel programming.
