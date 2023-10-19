@@ -21,7 +21,7 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true, writeTest=true)
     ncheck  = Int32( ceil(Int32, 0.25max(nx, ny)) )
     cfl     = Float32( 1.0 / sqrt(2.1) )
     re      = Float32(2π)
-
+    
     # GPU device
     MTLDevice(1)
     threads = (16,16) # 16 by 16 seems to be the most performant configuration
