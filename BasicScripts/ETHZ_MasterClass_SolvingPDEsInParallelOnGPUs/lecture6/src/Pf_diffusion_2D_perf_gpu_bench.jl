@@ -10,15 +10,15 @@ macro d_ya(A) esc(:( $A[ix  ,iy+1] - $A[ix,iy] ))end
 
 function Pf_diffusion_2D(; do_check=true, writeOut=true, writeTest=true)
     # Physics
-    lx,ly   = Float32(20.0), Float32(20.0)
-    k_ηf    = Float32(1.0)
+    lx,ly   = Float32(20.0), Float32(20.0)   # Domain extent
+    k_ηf    = Float32(1.0)                   # Permeability to viscosity ratio
     
     # Numerics
     nx = ny = 32 .* 2 .^(0:11)               # Array resolution#nx,ny   = 511,511
-    ϵtol    = Float32(1e-7)
-    maxiter = Int32(1e4);#max(nx,ny)
-    T_peak  = Float64(167.84e9)
-    T_apple = Float64(200.0e9)
+    ϵtol    = Float32(1e-7)                  # Residual tolerance
+    maxiter = Int32(1e4);#max(nx,ny)         # Maximum no. iteration
+    T_peak  = Float64(167.84e9)              # Peak bandwidth
+    T_apple = Float64(200.0e9)               # Apple announced bandwidth
     
     # Initialise storage arrays for plotting
     T_eff_all   = Float64[ ]
@@ -29,25 +29,25 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true, writeTest=true)
     # Resolution loop
     for iRes in eachindex(nx)
         # Resolution-dependent numerics 
-        ncheck  = Int32( ceil(Int32, 0.25max(nx[iRes], ny[iRes])) )
-        cfl     = Float32( 1.0 / sqrt(2.1) )
-        re      = Float32(2π)
-        maxBuff = 11 * nx[iRes] * ny[iRes] * sizeof(Float32)
+        ncheck  = Int32( ceil(Int32, 0.25max(nx[iRes], ny[iRes])) )    # Checking frequency
+        cfl     = Float32( 1.0 / sqrt(2.1) )                           # Stability criterion
+        re      = Float32(2π)                                          # Reynolds number
+        maxBuff = 11 * nx[iRes] * ny[iRes] * sizeof(Float32)           # Maximum accessible memory
 
         # GPU device
-        device  = MTLDevice(1)
+        device  = MTLDevice(1)                                         # Setup GPU device   
         threads = (16,16) # 16 by 16 seems to be the most performant configuration
         groups  = cld.((nx[iRes], ny[iRes]), threads)
 
-        # Sanity check, memory allocation, and initialisation
-        if (maxBuff > device.maxBufferLength)
+        # Sanity check
+        if (maxBuff > device.maxBufferLength)                          # Do not exceed maximum avail. memory
             break
         end
 
         # Derived numerics
-        dx,dy   = Float32( lx / nx[iRes] ),Float32( ly / ny[iRes] )
+        dx,dy   = Float32( lx / nx[iRes] ),Float32( ly / ny[iRes] )    # Grid spacing
         xc,yc   = LinRange{Float32}(dx/2, lx - dx/2, nx[iRes]), LinRange{Float32}(dy/2, ly - dy/2, ny[iRes])
-        θ_dτ    = Float32( max(lx,ly) / re / cfl / min(dx,dy))
+        θ_dτ    = Float32( max(lx,ly) / re / cfl / min(dx,dy))              # Iterative time stepping
         β_dτ    = Float32( (re * k_ηf) / (cfl * min(dx,dy) * max(lx,ly)) )
         
         # Inverse multiplications
@@ -57,13 +57,13 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true, writeTest=true)
         _dy     = Float32( 1.0 / dy )
         _β_dτ   = Float32( 1.0 / β_dτ )
         
-        # Array initialisation
-        Pf   = MtlArray( zeros(Float32, nx[iRes]  , ny[iRes]) )
+        # Device array initialisation
+        Pf   = MtlArray( zeros(Float32, nx[iRes]  , ny[iRes]) )             # Fluid pressure
         Pf  .= MtlArray( [exp( -( (ix-1) * dx - lx/Float32(2.0) )^2 - ( (iy-1)*dy - ly/Float32(2.0) )^2 ) 
                             for ix=1:size(Pf,1), iy=1:size(Pf,2)] )
-        qDx  = MtlArray( zeros(Float32, nx[iRes]+1, ny[iRes]  ) )
+        qDx  = MtlArray( zeros(Float32, nx[iRes]+1, ny[iRes]  ) )           # Darcy fluxes
         qDy  = MtlArray( zeros(Float32, nx[iRes]  , ny[iRes]+1) )
-        # r_Pf = MtlArray( zeros(Float32, nx[iRes]  , ny[iRes]  ) )
+        # r_Pf = MtlArray( zeros(Float32, nx[iRes]  , ny[iRes]  ) )         # Residual array
         
         # Iteration loop
         # iter = Int32(1); err_Pf = Float32(2ϵtol); t_tic = Float32(0.0); warmup_iter = Int32(11)
@@ -96,17 +96,21 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true, writeTest=true)
         # Monitor timing
         t_it = @belapsed begin compute!($Pf, $qDx, $qDy, $_dx, $_dy, $_β_dτ, $k_ηf_dx, $k_ηf_dy, $_1_θ_dτ, $threads, $groups) end
         # niter = (iter-warmup_iter)
-        A_eff = 3 * sizeof(Float32) * (nx[iRes]+1) * (ny[iRes]) + 3 * sizeof(Float32) * (nx[iRes]) * (ny[iRes]+1) + 4 * sizeof(Float32) * (nx[iRes]) * (ny[iRes]) # Example for qDx: 1 read and 1 write for qDx, 1 read for Pf
-        # t_it  = (t_toc-t_tic)/(niter-warmup_iter)   # Time per iteration [s]
-        # t_it = t_toc
-        T_eff = Float64(A_eff/t_it)                          # Effective memory throughput [GB/s]
-        Res = Float64(nx[iRes]*ny[iRes])
+        
+        # Effective memory access
+        A_eff = 3 * sizeof(Float32) * (nx[iRes]+1) * (ny[iRes]) + 3 * sizeof(Float32) * (nx[iRes]) * (ny[iRes]+1) + 4 * sizeof(Float32) * (nx[iRes]) * (ny[iRes])
+
+        # Effective memory throughput [GB/s]
+        T_eff = Float64(A_eff/t_it)
+        Res   = Float64(nx[iRes]*ny[iRes])
+
+        # Store data
         push!(T_eff_all ,  T_eff  )
         push!(Res_all   ,  Res    )
         push!(T_peak_all,  T_peak )
         push!(T_apple_all, T_apple)
 
-        # @printf("Elapsed time = %1.3f s; No. iterations = %d; Time / iteration = %1.3f s; T_eff = %1.3f GB/s\n", t_toc-t_tic, niter-warmup_iter, t_it, T_eff/1e9)
+        # Print to screen
         @printf("Nx = ny = %d; Time / iteration = %1.3e s; T_peak = %1.3f GB/s; T_eff = %1.3f GB/s\n", nx[iRes], t_it, T_peak/1e9, T_eff/1e9)
     end
     
@@ -118,7 +122,8 @@ function Pf_diffusion_2D(; do_check=true, writeOut=true, writeTest=true)
     l3 = lines!( ax, Res_all, T_apple_all, linewidth=5)
     Legend(f[1,2], [l1, l2, l3], [L"T_{eff}", L"T_{peak}", L"T_{Apple}"])
     display(f)
-    save("./doc/metalGPU_weakscaling.png", f, px_per_unit = 2)
+    #save("./doc/metalGPU_weakscaling.png", f, px_per_unit = 2)
+    
     # Return
     return
 end
